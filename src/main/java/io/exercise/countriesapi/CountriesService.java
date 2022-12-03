@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,7 +21,7 @@ public class CountriesService {
     public List<String> getNeighbours(String countryCode) {
         return getNeighboursFromCountry(
                 getExternalCountryInfo(countryCode)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Wrong country code provided")));
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Wrong country code provided")));
     }
 
     private List<String> getNeighboursFromCountry(Country country) {
@@ -32,21 +31,21 @@ public class CountriesService {
                 .toList();
     }
 
-    private Optional<Country> getExternalCountryInfo(String countryCode) {
+    public Optional<Country> getExternalCountryInfo(String countryCode) {
         return WebClient
-                    .create(EXTERNAL_COUNTRY_API_URL + countryCode)
-                    .get()
-                    .retrieve()
-                    .bodyToMono(Country.class)
-                    .onErrorComplete()
-                    .blockOptional();
+                .create(EXTERNAL_COUNTRY_API_URL + countryCode)
+                .get()
+                .retrieve()
+                .bodyToMono(Country.class)
+                .onErrorComplete()
+                .blockOptional();
     }
 
     public CountryList[] getListNeighboursMultipleCountries(List<String> countryCodeList) {
         List<Country> countryObjectList = getListOfCountries(countryCodeList);
 
         if (countryObjectList.size() == 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Wrong list of countries provided");
         }
 
         return countryObjectList.stream()
@@ -55,13 +54,9 @@ public class CountriesService {
     }
 
     private List<Country> getListOfCountries(List<String> countryCodeList) {
-        List<Country> countryList = new ArrayList<>();
-
-        countryCodeList.stream()
+        return countryCodeList.stream()
                 .map(this::getExternalCountryInfo)
-                .forEach(country -> country
-                        .ifPresent(countryList::add));
-
-        return countryList;
+                .flatMap(Optional::stream)
+                .toList();
     }
 }
