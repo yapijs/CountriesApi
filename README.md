@@ -1,9 +1,28 @@
 # CountriesApi
 
-## requirements:
+---
+### Project Description
+1. You can get neighbour countries of the country via REST API call.
+2. You can get a list of neighbours for each country, if requesting data for more than one country.
+3. Country data are fetched from external API (https://date.nager.at/)
 
-1. Create an application that would consume data from https://date.nager.at/ and expose
-   some logic via REST call.
-2. Implement the following REST call: accept a country code, provide a list of all border
-   countries.
-3. Add unit tests.
+---
+### Configuration
+1. Clone this project: `git clone git@github.com:yapijs/CountriesApi.git`
+
+---
+### Requirements:
+1. Have JRE/JDK 17 installed.
+2. If you would like to test API calls, use some tool like Postman. 
+
+---
+### Endpoints
+1. `http://localhost:8080/api/country/{countryCode}/neighbours` - where countryCode is String value of country like `US` or `AU`.
+    * for incorrect code caller will get http error: `404 NOT FOUND`
+2. `http://localhost:8080/api/countries/neighbours` - where in the request body indicate array of country codes like `["US", "AU"]`, for which api will return neighbourin countries.
+    * if some incorrect codes are added along with correct one, only correct ones will be processed.
+    * if none of codes are correct, there will be http error: `400 BAD REQUEST`
+
+---
+### Tests
+There are unit tests to verify correctness of the app.
