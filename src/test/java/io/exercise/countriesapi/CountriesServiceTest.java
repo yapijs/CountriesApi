@@ -28,6 +28,7 @@ public class CountriesServiceTest {
                 List.of(new Country("Finland", "Republic of Finland", "FI", "Europe", null),
                         new Country("Norway", "Kingdom of Norway", "NO", "Europe", null))));
     }
+
     private Optional<Country> defineMexico() {
         return Optional.of(new Country("Mexico", "United Mexican States", "MX", "Americas",
                 List.of(new Country("Belize", "Belize", "BZ", "Americas", null),
@@ -36,34 +37,42 @@ public class CountriesServiceTest {
     }
 
     private CountryList[] defineCountryList() {
-        return new CountryList[] {
+        return new CountryList[]{
                 new CountryList("Kingdom of Sweden", List.of("Republic of Finland", "Kingdom of Norway")),
                 new CountryList("United Mexican States", List.of("Belize", "Republic of Guatemala", "United States of America")),
         };
     }
 
-    @Test
-    public void shouldGetAllNeighbours() {
+    private void setupSweden() {
         Optional<Country> sweden = defineSweden();
-
-        List<String> result = List.of("Republic of Finland", "Kingdom of Norway");
-
         Mockito.doReturn(sweden)
                 .when(service).getExternalCountryInfo(Mockito.anyString());
+    }
+
+    private void setupMexico() {
+        Optional<Country> mexico = defineMexico();
+        Mockito.doReturn(mexico)
+                .when(service).getExternalCountryInfo("MX");
+    }
+
+    @Test
+    public void shouldGetAllNeighbours() {
+        List<String> result = List.of("Republic of Finland", "Kingdom of Norway");
+        setupSweden();
 
         assertEquals(result, service.getNeighbours("SE"));
     }
 
     @Test
     public void shouldThrowError() {
-        Optional<Country> returnedOptionalCountry = Optional.empty();
         HttpStatus httpStatus = HttpStatus.NOT_FOUND;
 
-        Mockito.doReturn(returnedOptionalCountry)
+        Optional<Country> optionalCountry = Optional.empty();
+        Mockito.doReturn(optionalCountry)
                 .when(service).getExternalCountryInfo(Mockito.anyString());
 
         ResponseStatusException exception = Assertions
-                .assertThrows(ResponseStatusException.class, () -> service.getNeighbours(""));
+                .assertThrows(ResponseStatusException.class, () -> service.getNeighbours(Mockito.anyString()));
         assertEquals(exception.getReason(), "Wrong country code provided");
         assertEquals(exception.getStatusCode(), httpStatus);
     }
@@ -71,15 +80,10 @@ public class CountriesServiceTest {
     @Test
     public void shouldGetNeighboursOfMultipleCountries() {
         List<String> countryCodes = List.of("SE", "MX");
-        Optional<Country> sweden = defineSweden();
-        Optional<Country> mexico = defineMexico();
         CountryList[] countryList = defineCountryList();
 
-
-        Mockito.doReturn(sweden)
-                .when(service).getExternalCountryInfo("SE");
-        Mockito.doReturn(mexico)
-                .when(service).getExternalCountryInfo("MX");
+        setupSweden();
+        setupMexico();
 
         CountryList[] result = service.getListNeighboursMultipleCountries(countryCodes);
 
@@ -89,16 +93,13 @@ public class CountriesServiceTest {
     @Test
     public void shouldGetNeighboursOfMultipleCountriesWithSomeWrongCountryCodes() {
         List<String> countryCodes = List.of("SE", "MX", "LT");
-        Optional<Country> sweden = defineSweden();
-        Optional<Country> mexico = defineMexico();
-        Optional<Country> optionalCountry = Optional.empty();
+
+        setupSweden();
+        setupMexico();
+
         CountryList[] countryList = defineCountryList();
+        Optional<Country> optionalCountry = Optional.empty();
 
-
-        Mockito.doReturn(sweden)
-                .when(service).getExternalCountryInfo("SE");
-        Mockito.doReturn(mexico)
-                .when(service).getExternalCountryInfo("MX");
         Mockito.doReturn(optionalCountry)
                 .when(service).getExternalCountryInfo("LT");
 
@@ -109,11 +110,10 @@ public class CountriesServiceTest {
 
     @Test
     public void shouldGetNeighboursOfMultipleCountriesWithAllWrongCountryCodes() {
-        Optional<Country> optionalCountry = Optional.empty();
         HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
         List<String> countryCodes = List.of("COUNTRY1", "COUNTRY2");
 
-
+        Optional<Country> optionalCountry = Optional.empty();
         Mockito.doReturn(optionalCountry)
                 .when(service).getExternalCountryInfo(Mockito.anyString());
 
